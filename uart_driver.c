@@ -33,8 +33,11 @@
 typedef volatile unsigned int * reg;
 // Static base
 static unsigned UART_BASE = 0x3f201000;
+static unsigned GPIO_BASE = 0x3f200000;
 
 // Regs pointers
+reg gpio_rg;
+reg gpio_sel1;
 reg data_rg;
 reg line_control_rg;
 reg control_rg;
@@ -70,18 +73,24 @@ void uartInit(int baudrate){
 	// Loading /dev/mem into a file
 	if ((fd = open("/dev/mem", O_RDWR, 0)) == -1) err(1, "Error opening /dev/mem");
 	// Mapping GPIO base physical address
+	gpio_rg = (unsigned int*) mmap(0, getpagesize(), PROT_WRITE, MAP_SHARED, fd, GPIO_BASE);
+	// Mapping UART base physical address
 	data_rg = (unsigned int*) mmap(0, getpagesize(), PROT_WRITE | PROT_READ, MAP_SHARED, fd, UART_BASE);
 	// Check for mapping errors
+	if (gpiobase == MAP_FAILED) errx(1, "Error during mapping GPIO");
 	if (data_rg == MAP_FAILED) errx(1, "Error during mapping UART");
 	// Setting regs pointers
-	flags_rg = data_rg + 0x18;
-	int_baudrate_rg = data_rg + 0x24;
-	frac_baudrate_rg = data_rg + 0x28;
-	line_control_rg = data_rg + 0x2C;
-	control_rg = data_rg + 0x30;
-	interrupt_mask_set_clear_rg = data_rg + 0x38;
-	raw_interrupt_status_rg = data_rg + 0x3C;
-	interrupt_clear_rg = data_rg + 0x44;
+	gpio_sel1 = gpio_rg + 0x1;
+	flags_rg = data_rg + 0x6; //0x18
+	int_baudrate_rg = data_rg + 0x9; //0x24
+	frac_baudrate_rg = data_rg + 0xA; //0x28
+	line_control_rg = data_rg + 0xB; //0x2C
+	control_rg = data_rg + 0xC; // 0x30
+	interrupt_mask_set_clear_rg = data_rg + 0xE; //0x38
+	raw_interrupt_status_rg = data_rg + 0xF; //0x3C
+	interrupt_clear_rg = data_rg + 0x11; //0x44
+	// Seting gpio pins for working with UART
+	*gpio_sel1 = *gpio_sel1 | 0x24000;
 	// Configuring UART control registers
 	uartSetControlReg(UARTEN, 0x0); // Desabling UART
 	uartSetBaudrate(baudrate); // Setting baudrate with the given value
