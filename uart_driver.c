@@ -1,34 +1,4 @@
-#include <stdio.h>
-#include <sys/mman.h> //mmap
-#include <err.h> //error handling
-#include <fcntl.h> //file ops
-#include <unistd.h> //usleep
-#include <string.h>
-#include <math.h>
-
-// UART clock frequency
-#define FUARTCLK 48000000
-
-#define ALL 0
-#define CLEAR 0x0
-#define SET 0xFFFFFFFF
-// Macros for line control register
-#define SPS 7
-#define WLEN 5
-#define FEN 4
-#define STP2 3
-#define EPS 2
-#define PEN 1
-#define BRK 0
-
-// Macros for control register
-#define RXE 9
-#define TXE 8
-#define UARTEN 0
-
-// Macros for interrupt mask set clear register
-#define TXIM 5
-#define RXIM 4
+#include "uart_driver.h"
 
 typedef volatile unsigned int * reg;
 // Static base
@@ -48,15 +18,12 @@ reg interrupt_mask_set_clear_rg;
 reg raw_interrupt_status_rg;
 reg interrupt_clear_rg;
 // Function prototypes
-void uartInit(int baudrate);
 char uartReadChar();
 void uartSetBaudrate(int baudrate);
 void uartSetLineControlReg(int field_name, int bits);
 void uartSetControlReg(int field_name, int bits);
 void uartSetInterruptMaskSetClearReg(int field_name, int bits);
 void uartSetInterruptClearReg(int field_name, int bits);
-void uartTransmitData(char data);	
-char uartReceiveData();
 void setBit(reg rgt, int n);
 void clearBit(reg rgt, int n);
 void writeBits(reg rgt, int bits, int n);
@@ -77,7 +44,7 @@ void uartInit(int baudrate){
 	// Mapping UART base physical address
 	data_rg = (unsigned int*) mmap(0, getpagesize(), PROT_WRITE | PROT_READ, MAP_SHARED, fd, UART_BASE);
 	// Check for mapping errors
-	if (gpiobase == MAP_FAILED) errx(1, "Error during mapping GPIO");
+	if (gpio_rg == MAP_FAILED) errx(1, "Error during mapping GPIO");
 	if (data_rg == MAP_FAILED) errx(1, "Error during mapping UART");
 	// Setting regs pointers
 	gpio_sel1 = gpio_rg + 0x1;
