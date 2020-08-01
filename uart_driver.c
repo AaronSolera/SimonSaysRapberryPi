@@ -1,4 +1,28 @@
-#include "uart_driver.h"
+#include <stdio.h>
+#include <sys/mman.h> //mmap
+#include <err.h> //error handling
+#include <fcntl.h> //file ops
+#include <unistd.h> //usleep
+#include <string.h>
+#include <math.h>
+
+// UART clock frequency
+#define FUARTCLK 48000000
+
+#define ALL 0
+#define CLEAR 0x0
+#define SET 0xFFFFFFFF
+// Macros for line control register
+#define WLEN 5
+
+// Macros for control register
+#define RXE 9
+#define TXE 8
+#define UARTEN 0
+
+// Macros for interrupt mask set clear register
+#define TXIM 5
+#define RXIM 4
 
 typedef volatile unsigned int * reg;
 // Static base
@@ -17,7 +41,11 @@ reg frac_baudrate_rg;
 reg interrupt_mask_set_clear_rg;
 reg raw_interrupt_status_rg;
 reg interrupt_clear_rg;
+
 // Function prototypes
+void uartInit(int baudrate);
+void uartTransmitData(char data);	
+char uartReceiveData();
 char uartReadChar();
 void uartSetBaudrate(int baudrate);
 void uartSetLineControlReg(int field_name, int bits);
@@ -29,8 +57,16 @@ void clearBit(reg rgt, int n);
 void writeBits(reg rgt, int bits, int n);
 int  readBits(reg rgt, int n_read, int position);
 
-int main(){
-	printf("Holi soy el driver de UART (:D)\n");
+int main(int argc, char const *argv[])
+{
+	if (strcmp(argv[1], "uartInit") == 0)
+	{
+		uartInit(9600);
+	} else if (strcmp(argv[1], "uartReceiveData") == 0){
+		printf("%c", uartReceiveData());
+	} else if (strcmp(argv[1], "uartTransmitData") == 0){
+		uartTransmitData((char)*argv[2]);
+	}
 	return 0;
 }
 
