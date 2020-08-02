@@ -23,22 +23,46 @@ app.get('/', (req,res) => {
 
 io.on('connection', socket => {
   console.log('Client Connected');
+  exec("./driver uartInit", (error, stdout, stderr) =>{
+    if(error != null){
+      console.log("Error init");
+    }
+  });
   socket.on('setup', (msg) => {
     let result=[2,3,4,5];
+    exec("./driver uartReceiveData", (error, stdout, stderr) =>{
+      if(error != null){
+        console.log("Error recieving");
+      }
+      else{
+        console.log("Leido " + stdout);
+      }
+    });
+    
     let count = 0;
     let response = [msg[0], msg[2], msg[4], msg[6] ];
     for(let i=0; i<4; i++){
-	console.log(`${response[i]}   ${result[i]}`);
-	if(response[i]==result[i]){
-		count = count +1;
-	}
+    	console.log(`${response[i]}   ${result[i]}`);
+    	if(response[i]==result[i]){
+    		count = count +1;
+    	}
     }
 
     if(count == 4){
-	console.log("Iguales");
+	    console.log("Iguales");
+      exec("./driver uartTransmitData 1", (error, stdout, stderr) =>{
+        if(error != null){
+          console.log("Error recieving");
+        }
+      });
     }
     else{
-	console.log("Distintos")
+	    console.log("Distintos");
+      exec("./driver uartTransmitData 2", (error, stdout, stderr) =>{
+        if(error != null){
+          console.log("Error recieving");
+        }
+      });
     }
 
   });
