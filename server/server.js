@@ -5,11 +5,11 @@ let io = require('socket.io')(http);
 let cors = require('cors')
 const {exec} = require('child_process');
  
- exec("omxplayer start.mp3", (error, stdout, stderr) =>{
-    if(error != null){
-      console.log("Sound error");
-    }
- });
+exec("./omxplayer start.mp3", (error, stdout, stderr) =>{
+  if(error != null){
+    console.log("Sound error");
+  }
+});
 
 let corsOptions = {
 	origin: 'http://localhost:4200',
@@ -28,14 +28,14 @@ app.get('/', (req,res) => {
 
 io.on('connection', socket => {
   console.log('Client Connected');
-  exec("driver uartInit", (error, stdout, stderr) =>{
+  exec("./driver uartInit", (error, stdout, stderr) =>{
     if(error != null){
       console.log("Error init");
     }
   });
   socket.on('setup', (msg) => {
     let result=[2,3,4,5];
-    exec("driver uartReceiveData", (error, stdout, stderr) =>{
+    exec("./driver uartReceiveData", (error, stdout, stderr) =>{
       if(error != null){
         console.log("Error recieving");
       }
@@ -55,7 +55,7 @@ io.on('connection', socket => {
 
     if(count == 4){
 	    console.log("Iguales");
-      exec("driver uartTransmitData 1", (error, stdout, stderr) =>{
+      exec("./driver uartTransmitData 1", (error, stdout, stderr) =>{
         if(error != null){
           console.log("Error recieving");
         }
@@ -63,7 +63,7 @@ io.on('connection', socket => {
     }
     else{
 	    console.log("Distintos");
-      exec("driver uartTransmitData 2", (error, stdout, stderr) =>{
+      exec("./driver uartTransmitData 2", (error, stdout, stderr) =>{
         if(error != null){
           console.log("Error recieving");
         }
