@@ -4,7 +4,6 @@
 #include <fcntl.h> //file ops
 #include <unistd.h> //usleep
 #include <string.h>
-#include <math.h>
 
 // UART clock frequency
 #define FUARTCLK 48000000
@@ -89,12 +88,6 @@ void writeBits(reg rgt, int bits, int n){
 	} while(bits = bits >> 1);
 }
 
-// This function gets a binary value expressed by a decimal value from an specific memory position
-int readBits(reg rgt, int n_read, int position){
-	int data = *rgt, clear = ((int) pow(2,n_read)) - 1; 
-	return (data >> position) & clear;
-}
-
 // This function transmit data via UART
 void uartTransmitData(char c){
 	mapControlRegistersMemory();
@@ -106,7 +99,7 @@ char uartReceiveData(){
 	mapControlRegistersMemory();
 	while(*raw_interrupt_status_rg != 0x20); // While UART is transmiting data, wait
 	*raw_interrupt_status_rg |= 0x20;
-	return readBits(data_rg, 0x8, 0x0);
+	return (char) *data_rg;
 }
 
 /*
