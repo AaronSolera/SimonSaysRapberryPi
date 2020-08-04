@@ -42,6 +42,29 @@ reg interrupt_mask_set_clear_rg;
 reg raw_interrupt_status_rg;
 reg interrupt_clear_rg;
 
+void mapControlRegistersMemory(){
+	int fd = -1;
+	// Loading /dev/mem into a file
+	if ((fd = open("/dev/mem", O_RDWR, 0)) == -1) err(1, "Error opening /dev/mem");
+	// Mapping GPIO base physical address
+	gpio_rg = (unsigned int*) mmap(0, getpagesize(), PROT_WRITE, MAP_SHARED, fd, GPIO_BASE);
+	// Mapping UART base physical address
+	data_rg = (unsigned int*) mmap(0, getpagesize(), PROT_WRITE | PROT_READ, MAP_SHARED, fd, UART_BASE);
+	// Check for mapping errors
+	if (gpio_rg == MAP_FAILED) errx(1, "Error during mapping GPIO");
+	if (data_rg == MAP_FAILED) errx(1, "Error during mapping UART");
+	// Setting regs pointers
+	gpio_sel1 = gpio_rg + 0x1;
+	flags_rg = data_rg + 0x6; //0x18
+	int_baudrate_rg = data_rg + 0x9; //0x24
+	frac_baudrate_rg = data_rg + 0xA; //0x28
+	line_control_rg = data_rg + 0xB; //0x2C
+	control_rg = data_rg + 0xC; // 0x30
+	interrupt_mask_set_clear_rg = data_rg + 0xE; //0x38
+	raw_interrupt_status_rg = data_rg + 0xF; //0x3C
+	interrupt_clear_rg = data_rg + 0x11; //0x44
+}
+
 // This sets to 1 a bit in a specific memory position
 void setBit(reg rgt, int n){
 	*rgt |= 1 << n;
@@ -74,11 +97,13 @@ int readBits(reg rgt, int n_read, int position){
 
 // This function transmit data via UART
 void uartTransmitData(char c){
+	mapControlRegistersMemory();
 	writeBits(data_rg, c, 0);
 }
 
 // This function receive data via UART
 char uartReceiveData(){
+	mapControlRegistersMemory();
 	while(*raw_interrupt_status_rg != 0x20); // While UART is transmiting data, wait
 	*raw_interrupt_status_rg |= 0x20;
 	return readBits(data_rg, 0x8, 0x0);
@@ -113,30 +138,9 @@ void uartSetBaudrate(int baudrate){
 	writeBits(frac_baudrate_rg, frac_part, 0);
 }
 
-
-
 // Initialize pointers: performs memory mapping, exits if mapping fails
 void uartInit(int baudrate){
-	int fd = -1;
-	// Loading /dev/mem into a file
-	if ((fd = open("/dev/mem", O_RDWR, 0)) == -1) err(1, "Error opening /dev/mem");
-	// Mapping GPIO base physical address
-	gpio_rg = (unsigned int*) mmap(0, getpagesize(), PROT_WRITE, MAP_SHARED, fd, GPIO_BASE);
-	// Mapping UART base physical address
-	data_rg = (unsigned int*) mmap(0, getpagesize(), PROT_WRITE | PROT_READ, MAP_SHARED, fd, UART_BASE);
-	// Check for mapping errors
-	if (gpio_rg == MAP_FAILED) errx(1, "Error during mapping GPIO");
-	if (data_rg == MAP_FAILED) errx(1, "Error during mapping UART");
-	// Setting regs pointers
-	gpio_sel1 = gpio_rg + 0x1;
-	flags_rg = data_rg + 0x6; //0x18
-	int_baudrate_rg = data_rg + 0x9; //0x24
-	frac_baudrate_rg = data_rg + 0xA; //0x28
-	line_control_rg = data_rg + 0xB; //0x2C
-	control_rg = data_rg + 0xC; // 0x30
-	interrupt_mask_set_clear_rg = data_rg + 0xE; //0x38
-	raw_interrupt_status_rg = data_rg + 0xF; //0x3C
-	interrupt_clear_rg = data_rg + 0x11; //0x44
+	mapControlRegistersMemory();
 	// Seting gpio pins for working with UART
 	*gpio_sel1 = *gpio_sel1 | 0x24000;
 	// Configuring UART control registers
